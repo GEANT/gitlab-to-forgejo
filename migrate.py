@@ -57,27 +57,17 @@ GLOBAL_ERROR_COUNT = 0
 # CONFIG SECTION START
 #######################
 
-if not os.path.exists(".migration.ini"):
-    print("Please create a .migration.ini file with the following content:")
-    print(
-        """
-[migration]
-gitlab_url = https://gitlab.example.com
-gitlab_token = <your-gitlab-token>
-gitlab_admin_user = gitlab-user
-gitlab_admin_pass = <your-gitlab-password>
-forgejo_url = https://forgejo.example.com
-forgejo_token = <your-forgejo-token>
-"""
-    )
+if not os.path.exists(".migrate.ini"):
+    print("Please create a .migrate.ini using the config template from the README!")
+
 config = configparser.RawConfigParser()
-config.read(".migration.ini")
-GITLAB_URL = config.get("migration", "gitlab_url")
-GITLAB_TOKEN = config.get("migration", "gitlab_token")
-GITLAB_ADMIN_USER = config.get("migration", "gitlab_admin_user")
-GITLAB_ADMIN_PASS = config.get("migration", "gitlab_admin_pass")
-FORGEJO_URL = config.get("migration", "forgejo_url")
-FORGEJO_TOKEN = config.get("migration", "forgejo_token")
+config.read(".migrate.ini")
+GITLAB_URL = config.get("migrate", "gitlab_url")
+GITLAB_TOKEN = config.get("migrate", "gitlab_token")
+GITLAB_ADMIN_USER = config.get("migrate", "gitlab_admin_user")
+GITLAB_ADMIN_PASS = config.get("migrate", "gitlab_admin_pass")
+FORGEJO_URL = config.get("migrate", "forgejo_url")
+FORGEJO_TOKEN = config.get("migrate", "forgejo_token")
 
 #######################
 # CONFIG SECTION END
@@ -102,15 +92,23 @@ def main():
     fg_ver = json.loads(get_version.sync_detailed(client=fg).content)["version"]
     print_info(f"Connected to Forgejo, version: {fg_ver}")
 
-    # IMPORT USERS AND GROUPS
+    # IMPORT USERS
     if args["--users"] or args["--all"]:
         import_users(gl, fg)
+
+    # IMPORT GROUPS
     if args["--groups"] or args["--all"]:
         import_groups(gl, fg)
 
     # IMPORT PROJECTS
     if args["--projects"] or args["--all"]:
         import_projects(gl, fg)
+
+    # IMPORT NOTHING ?
+    if not (args["--users"] and args["--groups"] and args["--projects"] and args["--all"]):
+        print()
+        print_warning("No migration option selected, nothing to do!")
+        print()
 
     print()
     if GLOBAL_ERROR_COUNT == 0:
@@ -122,6 +120,7 @@ def main():
 #
 # Data loading helpers for Forgejo
 #
+
 def get_labels(fg_api: pyforgejo, owner: string, repo: string) -> List:
     """get labels for a repository"""
     existing_labels = []

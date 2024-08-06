@@ -16,15 +16,10 @@ Tested with Gitlab Version 17.2.1 and Forgejo Version 8.0.0
 
 ## Usage
 
-Change items in the config section of the script.
-
-Install all dependencies via `python -m pip install -r requirements.txt` and
-use python3 to execute the script.
-
 ### How to use with venv
 
-To keep your local system clean, it might be helpful to store all Python dependencies in one folder.
-Python provides a virtual environment package which can be used to accomplish this task.
+To keep your local system clean, it is preferrable to use a virtual environment.
+You can follow these steps:
 
 ```bash
 python3 -m venv migration-env
@@ -34,6 +29,21 @@ python3 -m pip install -r requirements.txt
 
 Then start the migration script `python3 migrate.py`
 
+### ini file
+
+You need to create a configuration file called `.migrate.ini` and store it in the same directory of the script.  
+:bulb: `.migrate.ini` has been added to `.gitignore`.
+
+```ini
+[migrate]
+gitlab_url = https://gitlab.example.com
+gitlab_token = <your-gitlab-token>
+gitlab_admin_user = gitlab-user
+gitlab_admin_pass = <your-gitlab-password>
+forgejo_url = https://forgejo.example.com
+forgejo_token = <your-forgejo-token>
+```
+
 ### Credits and fork information
 
-this is a fork of [gitlab_to_gitea](https://git.autonomic.zone/kawaiipunk/gitlab-to-gitea.git), with less features (this script does not import issues, milestones and labes)
+This is a fork of [gitlab_to_gitea](https://git.autonomic.zone/kawaiipunk/gitlab-to-gitea.git), with less features (this script does not import issues, milestones and labes)
