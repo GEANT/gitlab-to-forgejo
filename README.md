@@ -2,7 +2,7 @@
 
 ## --== WIP ==--
 
-**While the script seems to work it has not been test extensively**
+**While the script seems to work it has not been tested extensively**
 
 This script uses the Gitlab and Forgejo API's to migrate all data from
 Gitlab to Forgejo.
@@ -48,4 +48,4 @@ forgejo_token = <your-forgejo-token>
 
 ### Credits and fork information
 
-This is a fork of [gitlab_to_gitea](https://git.autonomic.zone/kawaiipunk/gitlab-to-gitea.git), with less features (this script does not import issues, milestones and labes)
+This is a fork of [gitlab_to_gitea](https://git.autonomic.zone/kawaiipunk/gitlab-to-gitea.git), with less features (this script does not import issues, milestones and labels)
