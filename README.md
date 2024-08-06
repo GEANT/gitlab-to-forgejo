@@ -1,26 +1,18 @@
 # Gitlab to Forgejo migration script
 
-## Preamble
+## --== WIP ==--
 
-These scripts are inspired by [gitlab-to-gitea script](https://git.autonomic.zone/kawaiipunk/gitlab-to-gitea.git)
-
-I already tried the original script and it did not work with Forgejo, hence the second part of the script needs to be rewritten, and a different library should be used, among one of the followings: [api-client-libraries](https://codeberg.org/forgejo-contrib/delightful-forgejo#api-client-libraries)
-
-## Description of the tool
-
-This script uses the APIs from both systems to migrate all data from Gitlab to Gitea.
+This script uses the Gitlab and Forgejo API's to migrate all data from
+Gitlab to Forgejo.
 
 This script support migrating the following data:
 
 * Repositories & Wiki (fork status is lost)
-* Milestones
-* Labels
-* Issues (no comments)
 * Users (no profile pictures)
 * Groups
 * Public SSH keys
 
-Tested with Gitlab Version 13.0.6 and Gitea Version 1.11.6.
+Tested with Gitlab Version 17.2.1 and Forgejo Version 8.0.0
 
 ## Usage
 
@@ -41,3 +33,7 @@ python3 -m pip install -r requirements.txt
 ```
 
 Then start the migration script `python3 migrate.py`
+
+### Credits and fork information
+
+this is a fork of [gitlab_to_gitea](https://git.autonomic.zone/kawaiipunk/gitlab-to-gitea.git), with less features (this script does not import issues, milestones and labes)

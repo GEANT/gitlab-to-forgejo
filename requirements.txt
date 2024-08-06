@@ -1,4 +1,5 @@
 python-gitlab
 requests
 python-dateutil
-git+https://github.com/h44z/pygitea
+pyforgejo
+docopt-ng
