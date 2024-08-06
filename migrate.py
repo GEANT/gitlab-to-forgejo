@@ -54,7 +54,7 @@ from pyforgejo.api.repository import repo_migrate
 from pyforgejo.models.migrate_repo_options import MigrateRepoOptions
 
 
-SCRIPT_VERSION = "1.0"
+SCRIPT_VERSION = "0.5"
 GLOBAL_ERROR_COUNT = 0
 
 #######################
