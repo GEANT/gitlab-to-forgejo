@@ -33,6 +33,10 @@ import dateutil.parser
 import gitlab  # pip install python-gitlab
 import gitlab.v4.objects
 import pyforgejo  # pip install pyforgejo (https://github.com/h44z/pyforgejo)
+
+# Forgejo API imports: I started using the pyforgejo library, but I swapped to requests
+# as it is much easier to use and the pyforgejo library is not yet fully implemented.
+# So it is still partially used in the code.
 from pyforgejo import AuthenticatedClient
 from pyforgejo.api.miscellaneous import get_version
 from pyforgejo.api.user import user_get
@@ -56,9 +60,9 @@ GLOBAL_ERROR_COUNT = 0
 #######################
 # CONFIG SECTION START
 #######################
-
 if not os.path.exists(".migrate.ini"):
     print("Please create a .migrate.ini using the config template from the README!")
+    exit()
 
 config = configparser.RawConfigParser()
 config.read(".migrate.ini")
@@ -67,8 +71,8 @@ GITLAB_TOKEN = config.get("migrate", "gitlab_token")
 GITLAB_ADMIN_USER = config.get("migrate", "gitlab_admin_user")
 GITLAB_ADMIN_PASS = config.get("migrate", "gitlab_admin_pass")
 FORGEJO_URL = config.get("migrate", "forgejo_url")
+FORGEJO_API_URL = f"{FORGEJO_URL}/api/v1"
 FORGEJO_TOKEN = config.get("migrate", "forgejo_token")
-
 #######################
 # CONFIG SECTION END
 #######################
@@ -76,7 +80,8 @@ FORGEJO_TOKEN = config.get("migrate", "forgejo_token")
 
 def main():
     """Main function"""
-    args = docopt(__doc__)
+    _args = docopt(__doc__)
+    args = {k.replace("--", ""): v for k, v in _args.items()}
 
     print_color(Bcolors.HEADER, "---=== Gitlab to Forgejo migration ===---")
     print(f"Version: {SCRIPT_VERSION}")
@@ -88,27 +93,29 @@ def main():
     assert isinstance(gl.user, gitlab.v4.objects.CurrentUser)
     print_info(f"Connected to Gitlab, version: {gl.version()[0]}")
 
-    fg = AuthenticatedClient(base_url=f"{FORGEJO_URL}/api/v1", token=FORGEJO_TOKEN)
+    fg = AuthenticatedClient(base_url=FORGEJO_API_URL, token=FORGEJO_TOKEN)
     fg_ver = json.loads(get_version.sync_detailed(client=fg).content)["version"]
     print_info(f"Connected to Forgejo, version: {fg_ver}")
 
     # IMPORT USERS
-    if args["--users"] or args["--all"]:
+    if args["users"] or args["all"]:
         import_users(gl, fg)
-
     # IMPORT GROUPS
-    if args["--groups"] or args["--all"]:
+    if args["groups"] or args["all"]:
         import_groups(gl, fg)
-
     # IMPORT PROJECTS
-    if args["--projects"] or args["--all"]:
+    if args["projects"] or args["all"]:
         import_projects(gl, fg)
-
     # IMPORT NOTHING ?
-    if not (args["--users"] and args["--groups"] and args["--projects"] and args["--all"]):
+    if (
+        not args["users"]
+        and not args["groups"]
+        and not args["projects"]
+        and not args["all"]
+    ):
         print()
-        print_warning("No migration option selected, nothing to do!")
-        print()
+        print_warning("No migration option(s) selected, nothing to do!")
+        exit()
 
     print()
     if GLOBAL_ERROR_COUNT == 0:
@@ -120,6 +127,7 @@ def main():
 #
 # Data loading helpers for Forgejo
 #
+
 
 def get_labels(fg_api: pyforgejo, owner: string, repo: string) -> List:
     """get labels for a repository"""
@@ -184,7 +192,7 @@ def get_team_members(teamid: int) -> List:
     """get members for a team"""
     existing_members = []
     member_response: requests.Response = requests.get(
-        f"{FORGEJO_URL}/teams/{teamid}/members",
+        f"{FORGEJO_API_URL}/teams/{teamid}/members",
         headers={"Authorization": FORGEJO_TOKEN},
         timeout=10,
     )
@@ -221,7 +229,7 @@ def get_user_or_group(project: gitlab.v4.objects.Project) -> Dict:
     proj_namespace_name = name_clean(project.namespace["name"])
     session = requests.Session()
     response: requests.Response = session.get(
-        f"{FORGEJO_URL}/users/{proj_namespace_path}",
+        f"{FORGEJO_API_URL}/users/{proj_namespace_path}",
         headers={"Authorization": FORGEJO_TOKEN},
         timeout=10,
     )
@@ -229,7 +237,7 @@ def get_user_or_group(project: gitlab.v4.objects.Project) -> Dict:
         result = response.json()
     else:
         response: requests.Response = session.get(
-            f"{FORGEJO_URL}/orgs/{proj_namespace_name}",
+            f"{FORGEJO_API_URL}/orgs/{proj_namespace_name}",
             headers={"Authorization": FORGEJO_TOKEN},
             timeout=10,
         )
@@ -558,7 +566,6 @@ def _import_project_milestones(
 
 def _import_project_repo(fg_api: pyforgejo, project: gitlab.v4.objects.Project):
     if not repo_exists(fg_api, project.namespace["name"], name_clean(project.name)):
-        # print(f"project: {gitlab.v4.objects.Project}")
         clone_url = project.http_url_to_repo
         if GITLAB_ADMIN_PASS == "" and GITLAB_ADMIN_USER == "":
             clone_url = project.ssh_url_to_repo
@@ -587,7 +594,6 @@ def _import_project_repo(fg_api: pyforgejo, project: gitlab.v4.objects.Project):
                     f"Project {name_clean(project.name)} "
                     + f"import failed: {err_message}"
                 )
-            exit()
         else:
             print_error(
                 f"Failed to load project owner for project {name_clean(project.name)}"
@@ -777,7 +783,7 @@ def _import_group_members(
         for member in members:
             if not member_exists(member.username, first_team["id"]):
                 import_response: requests.Response = requests.put(
-                    f"{FORGEJO_URL}/users/{member.username}",
+                    f"{FORGEJO_API_URL}/users/{member.username}",
                     headers={"Authorization": FORGEJO_TOKEN},
                     timeout=10,
                     data={"username": member.username},
