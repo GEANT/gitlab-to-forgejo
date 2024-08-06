@@ -2,6 +2,8 @@
 
 ## --== WIP ==--
 
+**While the script seems to work it has not been test extensively**
+
 This script uses the Gitlab and Forgejo API's to migrate all data from
 Gitlab to Forgejo.
 
