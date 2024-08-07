@@ -61,7 +61,7 @@ GLOBAL_ERROR_COUNT = 0
 # CONFIG SECTION START
 #######################
 if not os.path.exists(".migrate.ini"):
-    print("Please create a .migrate.ini using the config template from the README!")
+    print("Please create a .migrate.ini file using the config template from the README!")
     exit()
 
 config = configparser.RawConfigParser()
@@ -422,6 +422,8 @@ def issue_exists(fg_api: pyforgejo, owner: string, repo: string, issue: string) 
 #
 # Import helper functions
 #
+
+
 def _import_project_labels(
     fg_api: pyforgejo,
     labels: List[gitlab.v4.objects.ProjectLabel],
@@ -496,72 +498,72 @@ def _import_project_milestones(
                 )
 
 
-# def _import_project_issues(
-#    fg_api: pyforgejo,
-#    issues: List[gitlab.v4.objects.ProjectIssue],
-#    owner: string,
-#    repo: string,
-# ):
-#    # reload all existing milestones and labels, needed for assignment in issues
-#    #existing_milestones = get_milestones(fg_api, owner, repo)
-#    existing_labels = get_labels(fg_api, owner, repo)
-#
-#    for issue in issues:
-#        if not issue_exists(fg_api, owner, repo, issue.title):
-#            due_date = ""
-#            if issue.due_date is not None:
-#                due_date = dateutil.parser.parse(issue.due_date).strftime(
-#                    "%Y-%m-%dT%H:%M:%SZ"
-#                )
-#
-#            assignee = None
-#            if issue.assignee is not None:
-#                assignee = issue.assignee["username"]
-#
-#            assignees = []
-#            for tmp_assignee in issue.assignees:
-#                assignees.append(tmp_assignee["username"])
-#
-#            milestone = None
-#            if issue.milestone is not None:
-#                existing_milestone = next(
-#                    (
-#                        item
-#                        for item in existing_milestones
-#                        if item["title"] == issue.milestone["title"]
-#                    ),
-#                    None,
-#                )
-#                if existing_milestone:
-#                    milestone = existing_milestone["id"]
-#
-#            labels = []
-#            for label in issue.labels:
-#                existing_label = next(
-#                    (item for item in existing_labels if item["name"] == label), None
-#                )
-#                if existing_label:
-#                    labels.append(existing_label["id"])
-#
-#            import_response: requests.Response = fg_api.post(
-#                f"/repos/{owner}/{repo}/issues",
-#                json={
-#                    "assignee": assignee,
-#                    "assignees": assignees,
-#                    "body": issue.description,
-#                    "closed": issue.state == "closed",
-#                    "due_on": due_date,
-#                    "labels": labels,
-#                    "milestone": milestone,
-#                    "title": issue.title,
-#                },
-#            )
-#            if import_response.ok:
-#                print_info(f"Issue {issue.title} imported!")
-#            else:
-#                print_error(
-#                    f"Issue {issue.title} import failed: {import_response.text}"
-#                )
+def _import_project_issues(
+    fg_api: pyforgejo,
+    issues: List[gitlab.v4.objects.ProjectIssue],
+    owner: string,
+    repo: string,
+):
+    # reload all existing milestones and labels, needed for assignment in issues
+    existing_milestones = get_milestones(fg_api, owner, repo)
+    existing_labels = get_labels(fg_api, owner, repo)
+
+    for issue in issues:
+        if not issue_exists(fg_api, owner, repo, issue.title):
+            due_date = ""
+            if issue.due_date is not None:
+                due_date = dateutil.parser.parse(issue.due_date).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ"
+                )
+
+            assignee = None
+            if issue.assignee is not None:
+                assignee = issue.assignee["username"]
+
+            assignees = []
+            for tmp_assignee in issue.assignees:
+                assignees.append(tmp_assignee["username"])
+
+            milestone = None
+            if issue.milestone is not None:
+                existing_milestone = next(
+                    (
+                        item
+                        for item in existing_milestones
+                        if item["title"] == issue.milestone["title"]
+                    ),
+                    None,
+                )
+                if existing_milestone:
+                    milestone = existing_milestone["id"]
+
+            labels = []
+            for label in issue.labels:
+                existing_label = next(
+                    (item for item in existing_labels if item["name"] == label), None
+                )
+                if existing_label:
+                    labels.append(existing_label["id"])
+
+            import_response: requests.Response = fg_api.post(
+                f"/repos/{owner}/{repo}/issues",
+                json={
+                    "assignee": assignee,
+                    "assignees": assignees,
+                    "body": issue.description,
+                    "closed": issue.state == "closed",
+                    "due_on": due_date,
+                    "labels": labels,
+                    "milestone": milestone,
+                    "title": issue.title,
+                },
+            )
+            if import_response.ok:
+                print_info(f"Issue {issue.title} imported!")
+            else:
+                print_error(
+                    f"Issue {issue.title} import failed: {import_response.text}"
+                )
 
 
 def _import_project_repo(fg_api: pyforgejo, project: gitlab.v4.objects.Project):
@@ -839,19 +841,19 @@ def import_projects(gitlab_api: gitlab.Gitlab, fg_api: pyforgejo):
         collaborators: List[gitlab.v4.objects.ProjectMember] = project.members.list(
             all=True
         )
-        labels: List[gitlab.v4.objects.ProjectLabel] = project.labels.list(all=True)
-        milestones: List[gitlab.v4.objects.ProjectMilestone] = project.milestones.list(
-            all=True
-        )
-        issues: List[gitlab.v4.objects.ProjectIssue] = project.issues.list(all=True)
+        # labels: List[gitlab.v4.objects.ProjectLabel] = project.labels.list(all=True)
+        # milestones: List[gitlab.v4.objects.ProjectMilestone] = project.milestones.list(
+        #     all=True
+        # )
+        # issues: List[gitlab.v4.objects.ProjectIssue] = project.issues.list(all=True)
 
         proj_name = project.namespace["name"]
         clean_proj_name = name_clean(project.name)
         print(f"Importing project {clean_proj_name} from owner {proj_name}")
         print(f"Found {len(collaborators)} collaborators for project {clean_proj_name}")
-        print(f"Found {len(labels)} labels for project {clean_proj_name}")
-        print(f"Found {len(milestones)} milestones for project {clean_proj_name}")
-        print(f"Found {len(issues)} issues for project {clean_proj_name}")
+        #print(f"Found {len(labels)} labels for project {clean_proj_name}")
+        #print(f"Found {len(milestones)} milestones for project {clean_proj_name}")
+        #print(f"Found {len(issues)} issues for project {clean_proj_name}")
 
         # import project repo
         _import_project_repo(fg_api, project)
@@ -923,7 +925,7 @@ def print_warning(message):
 
 def print_error(message):
     """Prints an error message and increments the global error count"""
-    global GLOBAL_ERROR_COUNT
+    global GLOBAL_ERROR_COUNT  # pylint: disable=global-statement
     GLOBAL_ERROR_COUNT += 1
     print_color(Bcolors.FAIL, message)
 
