@@ -3,6 +3,9 @@
 # git log --pretty=format:'%H,%at,%s' --date=default > /tmp/commit.log
 # to get the commits logfile for a repository
 
+print('this script has not been tested')
+exit()
+
 import mysql.connector as mariadb
 
 # set the following variables to fit your need...
