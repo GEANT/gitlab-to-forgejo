@@ -53,16 +53,16 @@ from pyforgejo.api.repository import repo_get
 from pyforgejo.api.repository import repo_migrate
 from pyforgejo.models.migrate_repo_options import MigrateRepoOptions
 
+from fg_migration import fo_print
 
 SCRIPT_VERSION = "0.5"
-GLOBAL_ERROR_COUNT = 0
 
 #######################
 # CONFIG SECTION START
 #######################
 if not os.path.exists(".migrate.ini"):
-    print("Please create a .migrate.ini file using the config template from the README!")
-    exit()
+    print("Please create .migrate.ini as explained in the README!")
+    os.sys.exit()
 
 config = configparser.RawConfigParser()
 config.read(".migrate.ini")
@@ -83,7 +83,7 @@ def main():
     _args = docopt(__doc__)
     args = {k.replace("--", ""): v for k, v in _args.items()}
 
-    print_color(Bcolors.HEADER, "---=== Gitlab to Forgejo migration ===---")
+    fo_print.print_color(fo_print.Bcolors.HEADER, "---=== Gitlab to Forgejo migration ===---")
     print(f"Version: {SCRIPT_VERSION}")
     print()
 
@@ -91,11 +91,11 @@ def main():
     gl = gitlab.Gitlab(GITLAB_URL, private_token=GITLAB_TOKEN)
     gl.auth()
     assert isinstance(gl.user, gitlab.v4.objects.CurrentUser)
-    print_info(f"Connected to Gitlab, version: {gl.version()[0]}")
+    fo_print.info(f"Connected to Gitlab, version: {gl.version()[0]}")
 
     fg = AuthenticatedClient(base_url=FORGEJO_API_URL, token=FORGEJO_TOKEN)
     fg_ver = json.loads(get_version.sync_detailed(client=fg).content)["version"]
-    print_info(f"Connected to Forgejo, version: {fg_ver}")
+    fo_print.info(f"Connected to Forgejo, version: {fg_ver}")
 
     # IMPORT USERS
     if args["users"] or args["all"]:
@@ -114,14 +114,14 @@ def main():
         and not args["all"]
     ):
         print()
-        print_warning("No migration option(s) selected, nothing to do!")
+        fo_print.warning("No migration option(s) selected, nothing to do!")
         exit()
 
     print()
-    if GLOBAL_ERROR_COUNT == 0:
-        print_success("Migration finished with no errors!")
+    if fo_print.GLOBAL_ERROR_COUNT == 0:
+        fo_print.success("Migration finished with no errors!")
     else:
-        print_error(f"Migration finished with {GLOBAL_ERROR_COUNT} errors!")
+        fo_print.error(f"Migration finished with {fo_print.GLOBAL_ERROR_COUNT} errors!")
 
 
 #
@@ -136,7 +136,7 @@ def get_labels(fg_api: pyforgejo, owner: string, repo: string) -> List:
     if label_response.ok:
         existing_labels = label_response.json()
     else:
-        print_error(
+        fo_print.error(
             f"Failed to load existing milestones for project {repo}! {label_response.text}"
         )
 
@@ -152,7 +152,7 @@ def get_milestones(fg_api: pyforgejo, owner: string, repo: string) -> List:
     if milestone_response.ok:
         existing_milestones = milestone_response.json()
     else:
-        print_error(
+        fo_print.error(
             f"Failed to load existing milestones for project {repo}! {milestone_response.text}"
         )
 
@@ -168,7 +168,7 @@ def get_issues(fg_api: pyforgejo, owner: string, repo: string) -> List:
     if issue_response.ok:
         existing_issues = issue_response.json()
     else:
-        print_error(
+        fo_print.error(
             f"Failed to load existing issues for project {repo}! {issue_response.text}"
         )
 
@@ -184,7 +184,7 @@ def get_teams(fg_api: pyforgejo, orgname: string) -> List:
         return json.loads(team_response.content)
 
     msg = json.loads(team_response.content)["errors"]
-    print_error(f"Failed to load existing teams for organization {orgname}! {msg}")
+    fo_print.error(f"Failed to load existing teams for organization {orgname}! {msg}")
     return []
 
 
@@ -199,7 +199,7 @@ def get_team_members(teamid: int) -> List:
     if member_response.ok:
         existing_members = member_response.json()
     else:
-        print_error(
+        fo_print.error(
             f"Failed to load existing members for team {teamid}! {member_response.text}"
         )
 
@@ -215,7 +215,7 @@ def get_collaborators(fg_api: pyforgejo, owner: string, repo: string) -> List:
     if collaborator_response.ok:
         existing_collaborators = collaborator_response.json()
     else:
-        print_error(
+        fo_print.error(
             f"Failed to load existing collaborators for repo {repo}! {collaborator_response.text}"
         )
 
@@ -244,7 +244,7 @@ def get_user_or_group(project: gitlab.v4.objects.Project) -> Dict:
         if response.ok:
             result = response.json()
         else:
-            print_error(
+            fo_print.error(
                 f"Failed to load user or group {proj_namespace_name}! {response.text}"
             )
 
@@ -260,7 +260,7 @@ def get_user_keys(fg_api: pyforgejo, username: string) -> Dict:
         return json.loads(key_response.content)
 
     status_code = key_response.status_code.name
-    print_error(f"Failed to load user keys for user {username}! {status_code}")
+    fo_print.error(f"Failed to load user keys for user {username}! {status_code}")
     return []
 
 
@@ -268,7 +268,7 @@ def user_exists(fg_api: pyforgejo, username: string) -> bool:
     """check if a user exists"""
     user_response: requests.Response = user_get.sync_detailed(username, client=fg_api)
     if user_response.status_code.name == "OK":
-        print_warning(f"User {username} already exists in Forgejo, skipping!")
+        fo_print.warning(f"User {username} already exists in Forgejo, skipping!")
         return True
 
     print(f"User {username} not found in Forgejo, importing!")
@@ -284,7 +284,7 @@ def user_key_exists(fg_api: pyforgejo, username: string, keyname: string) -> boo
         )
 
         if existing_key is not None:
-            print_warning(
+            fo_print.warning(
                 f"Public key {keyname} already exists for user {username}, skipping!"
             )
             return True
@@ -300,7 +300,7 @@ def organization_exists(fg_api: pyforgejo, orgname: string) -> bool:
     """check if an organization exists"""
     group_response: requests.Response = org_get.sync_detailed(orgname, client=fg_api)
     if group_response.status_code.name == "OK":
-        print_warning(f"Group {orgname} already exists in Forgejo, skipping!")
+        fo_print.warning(f"Group {orgname} already exists in Forgejo, skipping!")
         return True
 
     print(f"Group {orgname} not found in Forgejo, importing!")
@@ -316,7 +316,7 @@ def member_exists(username: string, teamid: int) -> bool:
         )
 
         if existing_member:
-            print_warning(f"Member {username} is already in team {teamid}, skipping!")
+            fo_print.warning(f"Member {username} is already in team {teamid}, skipping!")
             return True
 
         print(f"Member {username} is not in team {teamid}, importing!")
@@ -334,7 +334,7 @@ def collaborator_exists(
         f"/repos/{repo}/collaborators/{username}"
     )
     if collaborator_response.ok:
-        print_warning(f"Collaborator {username} already exists in Forgejo, skipping!")
+        fo_print.warning(f"Collaborator {username} already exists in Forgejo, skipping!")
     else:
         print(f"Collaborator {username} not found in Forgejo, importing!")
 
@@ -347,7 +347,7 @@ def repo_exists(fg_api: pyforgejo, owner: string, repo: string) -> bool:
         owner=owner, repo=repo, client=fg_api
     )
     if repo_response.status_code.name == "OK":
-        print_warning(f"Project {repo} already exists in Forgejo, skipping!")
+        fo_print.warning(f"Project {repo} already exists in Forgejo, skipping!")
         return True
 
     print(f"Project {repo} not found in Forgejo, importing!")
@@ -365,7 +365,7 @@ def label_exists(
         )
 
         if existing_label is not None:
-            print_warning(
+            fo_print.warning(
                 f"Label {labelname} already exists in project {repo}, skipping!"
             )
             return True
@@ -388,7 +388,7 @@ def milestone_exists(
         )
 
         if existing_milestone is not None:
-            print_warning(
+            fo_print.warning(
                 f"Milestone {milestone} already exists in project {repo}, skipping!"
             )
             return True
@@ -409,7 +409,7 @@ def issue_exists(fg_api: pyforgejo, owner: string, repo: string, issue: string) 
         )
 
         if existing_issue is not None:
-            print_warning(f"Issue {issue} already exists in project {repo}, skipping!")
+            fo_print.warning(f"Issue {issue} already exists in project {repo}, skipping!")
             return True
 
         print(f"Issue {issue} does not exist in project {repo}, importing!")
@@ -442,9 +442,9 @@ def _import_project_labels(
                 },
             )
             if import_response.ok:
-                print_info(f"Label {label.name} imported!")
+                fo_print.info(f"Label {label.name} imported!")
             else:
-                print_error(f"Label {label.name} import failed: {import_response.text}")
+                fo_print.error(f"Label {label.name} import failed: {import_response.text}")
 
 
 def _import_project_milestones(
@@ -471,7 +471,7 @@ def _import_project_milestones(
                 },
             )
             if import_response.ok:
-                print_info(f"Milestone {milestone.title} imported!")
+                fo_print.info(f"Milestone {milestone.title} imported!")
                 existing_milestone = import_response.json()
 
                 if existing_milestone:
@@ -487,13 +487,13 @@ def _import_project_milestones(
                         },
                     )
                     if update_response.ok:
-                        print_info(f"Milestone {milestone.title} updated!")
+                        fo_print.info(f"Milestone {milestone.title} updated!")
                     else:
-                        print_error(
+                        fo_print.error(
                             f"Milestone {milestone.title} update failed: {update_response.text}"
                         )
             else:
-                print_error(
+                fo_print.error(
                     f"Milestone {milestone.title} import failed: {import_response.text}"
                 )
 
@@ -559,9 +559,9 @@ def _import_project_issues(
                 },
             )
             if import_response.ok:
-                print_info(f"Issue {issue.title} imported!")
+                fo_print.info(f"Issue {issue.title} imported!")
             else:
-                print_error(
+                fo_print.error(
                     f"Issue {issue.title} import failed: {import_response.text}"
                 )
 
@@ -589,15 +589,15 @@ def _import_project_repo(fg_api: pyforgejo, project: gitlab.v4.objects.Project):
                 client=fg_api,
             )
             if import_response.status_code.name == "CREATED":
-                print_info(f"Project {name_clean(project.name)} imported!")
+                fo_print.info(f"Project {name_clean(project.name)} imported!")
             else:
                 err_message = json.loads(import_response.content)["message"]
-                print_error(
+                fo_print.error(
                     f"Project {name_clean(project.name)} "
                     + f"import failed: {err_message}"
                 )
         else:
-            print_error(
+            fo_print.error(
                 f"Failed to load project owner for project {name_clean(project.name)}"
             )
 
@@ -624,10 +624,10 @@ def _import_project_repo_collaborators(
             elif collaborator.access_level == 40:  # maintainer access
                 permission = "admin"
             elif collaborator.access_level == 50:  # owner access (only for groups)
-                print_error("Groupmembers are currently not supported!")
+                fo_print.error("Groupmembers are currently not supported!")
                 continue  # groups are not supported
             else:
-                print_warning(
+                fo_print.warning(
                     f"Unsupported access level {collaborator.access_level}, "
                     + "setting permissions to 'read'!"
                 )
@@ -639,9 +639,9 @@ def _import_project_repo_collaborators(
                 json={"permission": permission},
             )
             if import_response.ok:
-                print_info(f"Collaborator {collaborator.username} imported!")
+                fo_print.info(f"Collaborator {collaborator.username} imported!")
             else:
-                print_error(
+                fo_print.error(
                     f"Collaborator {collaborator.username} import failed: {import_response.text}"
                 )
 
@@ -667,10 +667,10 @@ def _import_users(
             body=body, client=fg_api
         )
         if import_response.status_code.name == "CREATED":
-            print_info(f"User redirect imported, temporary password: {tmp_password}")
+            fo_print.info(f"User redirect imported, temporary password: {tmp_password}")
         else:
             msg = json.loads(import_response.content)["message"]
-            print_error(f"User redirect import failed: {msg}")
+            fo_print.error(f"User redirect import failed: {msg}")
 
     for user in users:
         keys: List[gitlab.v4.objects.UserKey] = user.keys.list(all=True)
@@ -702,12 +702,12 @@ def _import_users(
                 body=body, client=fg_api
             )
             if import_response.status_code.name == "CREATED":
-                print_info(
+                fo_print.info(
                     f"User {user.username} imported, temporary password: {tmp_password}"
                 )
             else:
                 msg = json.loads(import_response.content)["message"]
-                print_error(f"User {user.username} import failed: {msg}")
+                fo_print.error(f"User {user.username} import failed: {msg}")
 
         # import public keys
         _import_user_keys(fg_api, keys, user)
@@ -731,10 +731,10 @@ def _import_user_keys(
                 client=fg_api,
             )
             if import_response.status_code.name == "CREATED":
-                print_info(f"Public key {key.title} imported!")
+                fo_print.info(f"Public key {key.title} imported!")
             else:
                 msg = json.loads(import_response.content)["message"]
-                print_error(f"Public key {key.title} import failed: {msg}")
+                fo_print.error(f"Public key {key.title} import failed: {msg}")
 
 
 def _import_groups(fg_api: pyforgejo, groups: List[gitlab.v4.objects.Group]):
@@ -760,10 +760,10 @@ def _import_groups(fg_api: pyforgejo, groups: List[gitlab.v4.objects.Group]):
                 client=fg_api,
             )
             if import_response.status_code.name == "CREATED":
-                print_info(f"Group {name_clean(group.name)} imported!")
+                fo_print.info(f"Group {name_clean(group.name)} imported!")
             else:
                 msg = json.loads(import_response.content)["message"]
-                print_error(f"Group {name_clean(group.name)} import failed: {msg}")
+                fo_print.error(f"Group {name_clean(group.name)} import failed: {msg}")
         # import group members
         _import_group_members(fg_api, members, group)
 
@@ -791,15 +791,15 @@ def _import_group_members(
                     data={"username": member.username},
                 )
                 if import_response.ok:
-                    print_info(
+                    fo_print.info(
                         f"Member {member.username} added to group {name_clean(group.name)}!"
                     )
                 else:
-                    print_error(
+                    fo_print.error(
                         f"Failed to add member {member.username} to group {name_clean(group.name)}!"
                     )
     else:
-        print_error(
+        fo_print.error(
             f"Failed to import members to group {name_clean(group.name)}: no teams found!"
         )
 
@@ -851,9 +851,9 @@ def import_projects(gitlab_api: gitlab.Gitlab, fg_api: pyforgejo):
         clean_proj_name = name_clean(project.name)
         print(f"Importing project {clean_proj_name} from owner {proj_name}")
         print(f"Found {len(collaborators)} collaborators for project {clean_proj_name}")
-        #print(f"Found {len(labels)} labels for project {clean_proj_name}")
-        #print(f"Found {len(milestones)} milestones for project {clean_proj_name}")
-        #print(f"Found {len(issues)} issues for project {clean_proj_name}")
+        # print(f"Found {len(labels)} labels for project {clean_proj_name}")
+        # print(f"Found {len(milestones)} milestones for project {clean_proj_name}")
+        # print(f"Found {len(issues)} issues for project {clean_proj_name}")
 
         # import project repo
         _import_project_repo(fg_api, project)
@@ -875,59 +875,6 @@ def import_projects(gitlab_api: gitlab.Gitlab, fg_api: pyforgejo):
         # _import_project_issues(
         #    fg_api, issues, project.namespace["name"], name_clean(project.name)
         # )
-
-
-#
-# Helper functions
-#
-
-
-class Bcolors:
-    """Color definitions for console output"""
-
-    HEADER = "\033[95m"
-    OKBLUE = "\033[94m"
-    OKGREEN = "\033[92m"
-    WARNING = "\033[93m"
-    FAIL = "\033[91m"
-    ENDC = "\033[0m"
-    BOLD = "\033[1m"
-    UNDERLINE = "\033[4m"
-
-
-def color_message(color, message, colorend=Bcolors.ENDC, bold=False):
-    """Returns a message in color"""
-    if bold:
-        return Bcolors.BOLD + color_message(color, message, colorend, False)
-
-    return color + message + colorend
-
-
-def print_color(color, message, colorend=Bcolors.ENDC, _bold=False):
-    """Prints a message in color"""
-    print(color_message(color, message, colorend))
-
-
-def print_info(message):
-    """Prints an info message"""
-    print_color(Bcolors.OKBLUE, message)
-
-
-def print_success(message):
-    """Prints a success message"""
-    print_color(Bcolors.OKGREEN, message)
-
-
-def print_warning(message):
-    """Prints a warning message"""
-    print_color(Bcolors.WARNING, message)
-
-
-def print_error(message):
-    """Prints an error message and increments the global error count"""
-    global GLOBAL_ERROR_COUNT  # pylint: disable=global-statement
-    GLOBAL_ERROR_COUNT += 1
-    print_color(Bcolors.FAIL, message)
 
 
 def name_clean(name):

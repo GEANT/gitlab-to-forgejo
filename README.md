@@ -23,12 +23,15 @@ To keep your local system clean, it is preferrable to use a virtual environment.
 You can follow these steps:
 
 ```bash
-python3 -m venv migration-env
-source migration-env/bin/activate
+python3 -m venv migration
+source migration/bin/activate
 python3 -m pip install -r requirements.txt
 ```
 
-Then start the migration script `python3 migrate.py`
+Then call the scripts using `--help`:
+
+* `./migrate.py --help`
+* `./create_push_mirrors.py --help`
 
 ### ini file
 
@@ -39,10 +42,12 @@ You need to create a configuration file called `.migrate.ini` and store it in th
 [migrate]
 gitlab_url = https://gitlab.example.com
 gitlab_token = <your-gitlab-token>
-gitlab_admin_user = gitlab-user
+gitlab_admin_user = <gitlab-admin-user>
 gitlab_admin_pass = <your-gitlab-password>
 forgejo_url = https://forgejo.example.com
 forgejo_token = <your-forgejo-token>
+forgejo_admin_user = <forgejo-admin-user>
+forgejo_admin_pass = <your-forgejo-password>
 ```
 
 ### Credits and fork information
