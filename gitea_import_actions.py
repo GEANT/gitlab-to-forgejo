@@ -1,3 +1,6 @@
+# This script is copied from the original gitea repository. 
+# It is untested.
+#
 # Import commits to gitea action database.
 # use:
 # git log --pretty=format:'%H,%at,%s' --date=default > /tmp/commit.log
