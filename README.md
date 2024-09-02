@@ -4,9 +4,9 @@
 
 **the scripts are currently undergoing testing**
 
-This script uses the Gitlab and Forgejo API's to migrate all data from Gitlab to Forgejo.
+This script uses the Gitlab API and a combination of Forgejo API and python `requests` to migrate all data from Gitlab to Forgejo.
 
-This script support migrating the following data:
+This script supports migration of the following data:
 
 * Repositories & Wiki (fork status is lost)
 * Users (no profile pictures)
@@ -28,7 +28,7 @@ source migration/bin/activate
 python3 -m pip install -r requirements.txt
 ```
 
-Then call the scripts using `--help`:
+Then acticate your venv and call the scripts using `--help`:
 
 * `./migrate.py --help`
 * `./create_push_mirrors.py --help`
