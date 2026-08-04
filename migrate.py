@@ -615,6 +615,7 @@ def _import_project_repo(fg_api: pyforgejo, project: gitlab.v4.objects.Project):
                     repo_name=proj_name,
                     uid=owner["id"],
                     wiki=True,
+                    lfs=True
                 ),
                 client=fg_api,
             )
