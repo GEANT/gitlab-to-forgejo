@@ -600,6 +600,7 @@ def _import_project_repo(fg_api: pyforgejo, project: gitlab.v4.objects.Project):
         if owner:
             import_response: requests.Response = repo_migrate.sync_detailed(
                 body=MigrateRepoOptions(
+                    auth_token=GITLAB_TOKEN,
                     auth_password=GITLAB_ADMIN_PASS,
                     auth_username=GITLAB_ADMIN_USER,
                     clone_addr=clone_url,
